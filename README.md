@@ -1,5 +1,10 @@
 # SQL
 
+mysql -u rahul -p
+$Dec2017
+
+source sqlfile.sql
+
 # DBMS & DB 
 APPLICATION -> DBMS(Create, Read, Update, Delete) -> DATABASE ( Collection of Data ex DB Schema )
 
@@ -19,7 +24,7 @@ DROP DATABASE soap_store; // Delete Database
 USE soap_store; // Select Database for use
 SELECT DATABASE(); // Show Current Using Database
 
-Database is bunch of Tables
+Database is a bunch of Tables
 
 # CREATE TABLES COMMANDS
 CREATE DATABASE cat_app;
@@ -235,4 +240,272 @@ SELECT title, author_lname FROM books;
 SELECT author_fname,author_lname, COUNT(*) FROM books GROUP BY author_lname;
 
 # MIN & MAX
+SELECT MIN(released_year) FROM books; // 1945
+SELECT MAX(released_year) FROM books; // 2016
 
+This won't work because first MIN(released_year) will evaluate which return 1 row then title will evaluate which return first row title.
+SELECT MIN(released_year),title FROM books; // 1945
+
+Solution
+SELECT released_year,title FROM books WHERE released_year=(SELECT MIN(released_year) FROM books);
+SELECT released_year,title FROM books WHERE released_year=(SELECT MAX(released_year) FROM books);
+
+SELECT released_year,title FROM books ORDER BY released_year ASC LIMIT 1;
+SELECT released_year,title FROM books ORDER BY released_year DESC LIMIT 1;
+
+GROUP BY with MIN & MAX:
+SELECT author_fname,author_lname, MIN(released_year) FROM books GROUP BY author_lname,author_fname;
+SELECT author_fname,author_lname, MAX(released_year) FROM books GROUP BY author_lname,author_fname;
+
+# SUM
+SELECT author_fname,author_lname, SUM(pages) FROM books GROUP BY author_lname, author_fname;
+
+# AVG
+SELECT author_fname,author_lname,released_year, AVG(pages) FROM books GROUP BY author_lname, author_fname;
+
+# DATA TYPES
+CHAR(1)
+VARCHAR(20)
+INT
+DECIMAL(5,2) // Max 5 digit and 2 of them after decimal ex 999.99
+FLOAT // upto 7 digit precision
+DOUBLE // // upto 15 digit precision
+DATE // YYYY-MM-DD
+TIME // HH:MM:SS
+DATETIME // YYYY-MM-DD HH:MM:SS, Range 1000-01-01 9999-12-31
+TIMESTAMP // Range 1970-01-01 2038-01-19
+
+SELECT CURDATE();
+SELECT CURTIME();
+SELECT NOW();
+
+SELECT DATEDIFF('2020-11-20', '2020-10-19');
+SELECT DATEDIFF(NOW(), '1989-05-22');
+
+SELECT DAY('2020-11-24');
+SELECT DAYNAME('2020-11-24');
+SELECT DAYOFWEEK('2020-11-24');
+SELECT DAYOFMONTH('2020-11-24');
+SELECT DAYOFYEAR('2020-11-24');
+
+SELECT MONTH(NOW());
+SELECT MONTHNAME(NOW());
+
+SELECT YEAR(NOW());
+SELECT YEARWEEK(NOW());
+
+SELECT HOUR(Now());
+SELECT MINUTE(NOW());
+SELECT SECOND(NOW());
+
+SELECT DATE_FORMAT(NOW(), '%D %W %M %Y %H:%i:%s %p');
+
+# Created On & Updated On
+CREATE TABLE comments(content VARCHAR(50), created_on TIMESTAMP DEFAULT NOW());
+INSERT INTO comments(content) VALUES ('My first content');
+INSERT INTO comments(content) VALUES ('My second content');
+SELECT * FROM comments;
+
+
+CREATE TABLE comments2(content VARCHAR(50), created_on TIMESTAMP DEFAULT NOW(), updated_on TIMESTAMP DEFAULT NOW() ON UPDATE NOW());
+INSERT INTO comments2(content) VALUES ('My first content');
+INSERT INTO comments2(content) VALUES ('My second content');
+SELECT * FROM comments2;
+UPDATE comments2 SET content='My First Update...' where content='My first content';
+SELECT * FROM comments2;
+
+# Logical Operator
+SELECT title, released_year FROM books WHERE released_year != 2003;
+SELECT title, released_year FROM books WHERE released_year = 2003;
+SELECT title, released_year FROM books WHERE released_year BETWEEN 2001 AND 2003;
+SELECT title, released_year FROM books WHERE released_year NOT BETWEEN 2001 AND 2003;
+SELECT title, released_year FROM books WHERE title LIKE 'W%';
+SELECT title, released_year FROM books WHERE title NOT LIKE 'W%';
+SELECT title, released_year FROM books WHERE released_year < 2004;
+SELECT title, released_year FROM books WHERE released_year > 2004;
+SELECT title, released_year FROM books WHERE released_year <= 2003 ORDER BY released_year;
+SELECT 99 > 0; // 1 True
+SELECT 99 > 543; // 0 False
+SELECT * FROM books WHERE author_lname = 'Eggers' AND released_year > 2010;
+SELECT * FROM books WHERE author_lname = 'Eggers' OR released_year > 2010;
+SELECT title, author_lname FROM books WHERE author_lname IN ('Eggers', 'Lahiri', 'Smith');
+SELECT title, released_year FROM books WHERE released_year NOT IN ('2003', '2004');
+SELECT title, released_year, 
+       CASE 
+           WHEN released_year >=2000 THEN 'Modern Lit' 
+           WHEN released_year >=2004 THEN 'More Modern Lit' 
+           ELSE '20th Century Lit' 
+       END AS GENRE 
+FROM books;
+
+# Relationship
+
+# One : Many : use customer_order.sql for table creation
+Customers : Orders ( 1 Customer can have many orders)
+
+SELECT * FROM orders WHERE customer_id = (SELECT id FROM customers WHERE last_name = 'George');
+
+-- IMPLICIT INNER JOIN
+SELECT * FROM customers, orders WHERE customers.id = orders.customer_id;
+SELECT first_name, last_name, order_date, amount FROM customers, orders WHERE customers.id = orders.customer_id;
+SELECT * FROM customers, orders WHERE customers.id = orders.customer_id AND customers.last_name = 'Davis';
+
+-- EXPLICIT INNER JOIN
+SELECT first_name, last_name, order_date, amount FROM customers JOIN orders ON customers.id = orders.customer_id;
+
+-- LEFT JOIN
+SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
+SELECT customer_id,first_name, last_name, order_date, AVG(amount) FROM customers JOIN orders ON customers.id = orders.customer_id GROUP BY orders.customer_id;
+SELECT first_name, last_name, IFNULL(SUM(amount), 0) AS total_spent FROM customers LEFT JOIN orders ON customers.id = orders.customer_id GROUP BY customers.id ORDER BY total_spent;
+
+-- RIGHT JOIN
+SELECT first_name, last_name, IFNULL(SUM(amount), 0) AS total_spent FROM customers RIGHT JOIN orders ON customers.id = orders.customer_id GROUP BY customers.id ORDER BY total_spent;
+
+# Many To Many : use tv_review_app.sql for table creation
+3 Tables 
+
+# Instagram DB
+CREATE TABLE users (
+id INTEGER AUTO_INCREMENT PRIMARY KEY,
+username VARCHAR(255) UNIQUE NOT NULL,
+created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE photos (
+id INTEGER AUTO_INCREMENT PRIMARY KEY,
+image_url VARCHAR(255) NOT NULL,
+user_id INTEGER NOT NULL,
+created_at TIMESTAMP DEFAULT NOW(),
+FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE comments (
+id INTEGER AUTO_INCREMENT PRIMARY KEY,
+comment_text VARCHAR(255) NOT NULL,
+photo_id INTEGER NOT NULL,
+user_id INTEGER NOT NULL,
+created_at TIMESTAMP DEFAULT NOW(),
+FOREIGN KEY(photo_id) REFERENCES photos(id),
+FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE likes (
+user_id INTEGER NOT NULL,
+photo_id INTEGER NOT NULL,
+created_at TIMESTAMP DEFAULT NOW(),
+FOREIGN KEY(user_id) REFERENCES users(id),
+FOREIGN KEY(photo_id) REFERENCES photos(id),
+PRIMARY KEY(user_id, photo_id)
+);
+
+CREATE TABLE follows (
+follower_id INTEGER NOT NULL,
+followee_id INTEGER NOT NULL,
+created_at TIMESTAMP DEFAULT NOW(),
+FOREIGN KEY(follower_id) REFERENCES users(id),
+FOREIGN KEY(followee_id) REFERENCES users(id),
+PRIMARY KEY(follower_id, followee_id)
+);
+
+CREATE TABLE tags (
+id INTEGER AUTO_INCREMENT PRIMARY KEY,
+tag_name VARCHAR(255) UNIQUE,
+created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE photo_tags (
+photo_id INTEGER NOT NULL,
+tag_id INTEGER NOT NULL,
+FOREIGN KEY(photo_id) REFERENCES photos(id),
+FOREIGN KEY(tag_id) REFERENCES tags(id),
+PRIMARY KEY(photo_id, tag_id)
+);
+
+or Use
+ig_clone_data.sql
+
+Questions:
+1. Find 5 oldest users : 
+   SELECT * FROM users ORDER BY created_at limit 5;
+2. What day of week do most users register on ?
+   SELECT username, DAYNAME(created_at) AS day, COUNT(*) AS total FROM users GROUP BY day ORDER BY total desc LIMIT 2;
+3. Find the users who never posted a photo ?
+   SELECT username FROM users LEFT JOIN photos p on users.id = p.user_id WHERE p.id IS NULL ;
+4. Who get the most likes ?
+   SELECT
+   username,
+   photos.id,
+   photos.image_url,
+   COUNT(*) AS total
+   FROM photos
+   INNER JOIN likes
+   ON likes.photo_id = photos.id
+   INNER JOIN users
+   ON photos.user_id = users.id
+   GROUP BY photos.id
+   ORDER BY total DESC
+   LIMIT 1;
+5. How many times does avg user photos
+   SELECT (SELECT COUNT(*) FROM photos) / (SELECT COUNT(*) FROM users) as avg_photos;
+6. What are top 5 most used hashtag
+   SELECT tags.tag_name,
+   Count(*) AS total
+   FROM photo_tags
+   JOIN tags
+   ON photo_tags.tag_id = tags.id
+   GROUP BY tags.id
+   ORDER BY total DESC
+   LIMIT 5; 
+7. Find the users who have liked on there every single photo
+   SELECT username,
+   Count(*) AS num_likes
+   FROM   users
+   INNER JOIN likes
+   ON users.id = likes.user_id
+   GROUP  BY likes.user_id
+   HAVING num_likes = (SELECT Count(*)
+   FROM   photos);
+
+
+## Database Triggers
+
+Dont use trigger, do this logic in middleware like spring boot and don't let user even reach to db for these type of logic 
+
+trigger_time: Before & After
+trigger_event: Insert, Update & Delete
+table_name : users, photos, likes ....
+
+
+CREATE DATABASE trigger_db;
+USE trigger_db;
+CREATE TABLE users (
+username VARCHAR(50),
+age INT
+);
+INSERT INTO users (username, age) VALUES ('rahul', 28);
+INSERT INTO users (username, age) VALUES ('ravi', 16);
+SELECT * FROM users;
+
+Need to set this using root user : SET GLOBAL log_bin_trust_function_creators = 1;
+
+DELIMITER $$
+
+CREATE TRIGGER must_be_adult
+BEFORE INSERT ON users FOR EACH ROW
+BEGIN
+IF NEW.age < 18
+THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'Must be today Date';
+END IF;
+END;
+
+$$
+
+DELIMITER ;
+
+Note : DELIMITER $$ : This will change the DELIMITER to $$ instead if ;
+for example : select * from users $$
+and then again when we run DELIMITER ; will change this to
+select * from users ;
+   
